@@ -2,79 +2,125 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-<meta name="theme-color" content="#0b0f14" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0a0e13" />
 <title>Cérebro — Captura</title>
 <link rel="manifest" href="manifest.json" />
 <style>
-  :root {
+  :root{
     --txt:#e8eef5; --mut:#8b98a9; --field:#0e141b; --line:#232c38;
     --em1:#34d399; --em2:#10b981; --em3:#059669;
   }
-  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  body {
-    margin:0; min-height:100dvh; color:var(--txt);
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; }
+  body{
+    min-height:100dvh; color:var(--txt);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,sans-serif;
     background:
       radial-gradient(1100px 560px at 50% -12%, rgba(52,211,153,.16), transparent 60%),
       radial-gradient(760px 520px at 50% 115%, rgba(99,102,241,.10), transparent 60%),
       #0a0e13;
-    display:flex; align-items:center; justify-content:center; padding:24px 16px;
+    display:flex; align-items:center; justify-content:center;
+    padding:24px 16px calc(24px + env(safe-area-inset-bottom));
   }
-  .wrap {
-    width:100%; max-width:440px;
-    background:rgba(18,24,33,.72); backdrop-filter:blur(14px);
-    -webkit-backdrop-filter:blur(14px);
-    border:1px solid rgba(255,255,255,.08); border-radius:22px;
-    padding:26px 22px 20px; box-shadow:0 24px 70px rgba(0,0,0,.5);
+  .wrap{
+    width:100%; max-width:452px; position:relative;
+    background:rgba(18,24,33,.72); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+    border:1px solid rgba(255,255,255,.08); border-radius:24px;
+    padding:24px 22px 20px; box-shadow:0 24px 70px rgba(0,0,0,.5);
+    animation:cardIn .5s cubic-bezier(.2,.8,.2,1) both;
   }
-  .head { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
-  .badge { width:46px; height:46px; border-radius:14px; flex:none; display:grid; place-items:center;
+  @keyframes cardIn{ from{ opacity:0; transform:translateY(16px) scale(.98);} to{ opacity:1; transform:none;} }
+
+  .head{ display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+  .badge{ width:46px; height:46px; border-radius:14px; flex:none; display:grid; place-items:center;
     font-size:25px; background:linear-gradient(135deg,var(--em1),var(--em3));
-    box-shadow:0 8px 22px rgba(16,185,129,.4); }
-  .head .t h1 { font-size:17px; margin:0; font-weight:700; letter-spacing:.2px; }
-  .head .t p { margin:3px 0 0; font-size:12.5px; color:var(--mut); }
-  #net { margin-left:auto; font-size:11px; color:var(--mut); border:1px solid var(--line);
+    box-shadow:0 8px 22px rgba(16,185,129,.4); transition:transform .2s; }
+  .badge.pulse{ animation:pop .5s cubic-bezier(.2,1.4,.4,1); }
+  .head .t h1{ font-size:17px; margin:0; font-weight:700; letter-spacing:.2px; }
+  .head .t p{ margin:3px 0 0; font-size:12.5px; color:var(--mut); }
+  #net{ margin-left:auto; font-size:11px; color:var(--mut); border:1px solid var(--line);
     padding:4px 9px; border-radius:999px; white-space:nowrap; align-self:flex-start; }
-  textarea { width:100%; min-height:150px; resize:vertical; background:var(--field); color:var(--txt);
-    border:1px solid var(--line); border-radius:14px; padding:14px 15px; font-size:16px; line-height:1.55;
-    outline:none; font-family:inherit; transition:border-color .15s, box-shadow .15s; }
-  textarea::placeholder { color:#5b6675; }
-  textarea:focus { border-color:var(--em2); box-shadow:0 0 0 3px rgba(52,211,153,.15); }
-  .tags { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 18px; }
-  .tag { padding:8px 13px; border-radius:999px; border:1px solid var(--line); background:var(--field);
-    color:var(--mut); font-size:13.5px; cursor:pointer; user-select:none; transition:all .15s; }
-  .tag:hover { border-color:#3a4757; color:var(--txt); }
-  .tag.on { background:linear-gradient(135deg,var(--em1),var(--em3)); border-color:transparent;
-    color:#03130c; font-weight:600; box-shadow:0 4px 13px rgba(16,185,129,.32); }
-  button.save { width:100%; padding:15px; font-size:16px; font-weight:700; border:none; border-radius:14px;
-    cursor:pointer; color:#03130c; background:linear-gradient(135deg,var(--em1),var(--em2));
-    box-shadow:0 8px 22px rgba(16,185,129,.38); letter-spacing:.2px;
+
+  .counter{ display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--em1);
+    background:rgba(16,185,129,.10); border:1px solid rgba(16,185,129,.25);
+    padding:5px 11px; border-radius:999px; margin-bottom:16px; transition:transform .2s; }
+  .counter.bump{ animation:pop .45s cubic-bezier(.2,1.4,.4,1); }
+
+  textarea{ width:100%; min-height:120px; max-height:340px; resize:none; overflow-y:auto;
+    background:var(--field); color:var(--txt); border:1px solid var(--line); border-radius:15px;
+    padding:15px; font-size:16px; line-height:1.55; outline:none; font-family:inherit;
+    transition:border-color .15s, box-shadow .15s; }
+  textarea::placeholder{ color:#5b6675; }
+  textarea:focus{ border-color:var(--em2); box-shadow:0 0 0 3px rgba(52,211,153,.15); }
+  .meta{ display:flex; justify-content:space-between; align-items:center; margin:8px 2px 0; font-size:11.5px; color:#57616f; }
+  .kbd{ opacity:.7; }
+
+  .tags{ display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 18px; }
+  .tag{ padding:8px 13px; border-radius:999px; border:1px solid var(--line); background:var(--field);
+    color:var(--mut); font-size:13.5px; cursor:pointer; user-select:none;
+    transition:transform .12s, background .15s, color .15s, border-color .15s, box-shadow .15s; }
+  .tag:hover{ border-color:#3a4757; color:var(--txt); }
+  .tag:active{ transform:scale(.94); }
+  .tag.on{ background:linear-gradient(135deg,var(--em1),var(--em3)); border-color:transparent;
+    color:#03130c; font-weight:600; box-shadow:0 4px 13px rgba(16,185,129,.32); animation:pop .35s cubic-bezier(.2,1.4,.4,1); }
+
+  button.save{ position:relative; width:100%; padding:15px; font-size:16px; font-weight:700; border:none;
+    border-radius:14px; cursor:pointer; color:#03130c; background:linear-gradient(135deg,var(--em1),var(--em2));
+    box-shadow:0 8px 22px rgba(16,185,129,.38); letter-spacing:.2px; overflow:hidden;
     transition:transform .1s, box-shadow .15s, opacity .15s; }
-  button.save:hover { box-shadow:0 11px 28px rgba(16,185,129,.48); }
-  button.save:active { transform:translateY(1px) scale(.995); }
-  button.save:disabled { opacity:.55; box-shadow:none; cursor:default; }
-  .status { margin-top:13px; font-size:13.5px; min-height:20px; text-align:center; }
-  .ok { color:var(--em1); } .err { color:#f87171; } .warn { color:#fbbf24; }
-  .hint { margin-top:16px; text-align:center; font-size:11.5px; color:#57616f; }
-  .queue { margin-top:22px; font-size:13px; color:var(--mut); }
-  .queue h2 { font-size:12px; color:var(--mut); font-weight:600; margin:0 0 8px; text-transform:uppercase; letter-spacing:.5px; }
-  .qitem { background:var(--field); border:1px solid var(--line); border-radius:11px; padding:10px 12px;
+  button.save:hover{ box-shadow:0 11px 28px rgba(16,185,129,.48); }
+  button.save:active{ transform:translateY(1px) scale(.995); }
+  button.save:disabled{ opacity:.5; box-shadow:none; cursor:default; }
+  .spinner{ width:17px; height:17px; border:2.5px solid rgba(3,19,12,.35); border-top-color:#03130c;
+    border-radius:50%; display:inline-block; vertical-align:-3px; animation:spin .6s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg);} }
+
+  .status{ margin-top:13px; font-size:13.5px; min-height:18px; text-align:center; }
+  .ok{ color:var(--em1);} .err{ color:#f87171;} .warn{ color:#fbbf24;}
+  .hint{ margin-top:14px; text-align:center; font-size:11.5px; color:#57616f; }
+
+  .recent{ margin-top:22px; }
+  .recent h2, .queue h2{ font-size:11px; color:var(--mut); font-weight:600; margin:0 0 8px;
+    text-transform:uppercase; letter-spacing:.6px; }
+  .ritem{ background:var(--field); border:1px solid var(--line); border-left:3px solid var(--em2);
+    border-radius:11px; padding:10px 12px; margin-bottom:7px; font-size:13px; color:var(--txt);
+    animation:slideIn .28s ease both; }
+  .ritem .rtags{ margin-top:5px; font-size:11px; color:var(--em1); }
+  .ritem .rtime{ float:right; font-size:11px; color:var(--mut); }
+  @keyframes slideIn{ from{ opacity:0; transform:translateY(-8px);} to{ opacity:1; transform:none;} }
+
+  .queue{ margin-top:22px; font-size:13px; color:var(--mut); }
+  .qitem{ background:var(--field); border:1px solid var(--line); border-radius:11px; padding:10px 12px;
     margin-bottom:6px; font-size:13px; display:flex; justify-content:space-between; gap:8px; }
-  .qitem small { color:var(--mut); white-space:nowrap; }
-  .cfg { margin-top:22px; border-top:1px solid rgba(255,255,255,.06); padding-top:14px; }
-  .cfg summary { color:var(--mut); font-size:12.5px; cursor:pointer; list-style:none; }
-  .cfg summary::-webkit-details-marker { display:none; }
-  .cfg input { width:100%; margin-top:6px; background:var(--field); color:var(--txt); border:1px solid var(--line);
+  .qitem small{ color:var(--mut); white-space:nowrap; }
+
+  .cfg{ margin-top:22px; border-top:1px solid rgba(255,255,255,.06); padding-top:14px; }
+  .cfg summary{ color:var(--mut); font-size:12.5px; cursor:pointer; list-style:none; }
+  .cfg summary::-webkit-details-marker{ display:none; }
+  .cfg input{ width:100%; margin-top:6px; background:var(--field); color:var(--txt); border:1px solid var(--line);
     border-radius:10px; padding:10px; font-size:13.5px; outline:none; }
-  .cfg input:focus { border-color:var(--em2); }
-  .cfg label { font-size:11.5px; color:var(--mut); display:block; margin-top:12px; }
+  .cfg input:focus{ border-color:var(--em2); }
+  .cfg label{ font-size:11.5px; color:var(--mut); display:block; margin-top:12px; }
+
+  @keyframes pop{ 0%{ transform:scale(1);} 40%{ transform:scale(1.12);} 100%{ transform:scale(1);} }
+
+  /* checkmark de sucesso */
+  .splash{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; pointer-events:none; z-index:50; }
+  .splash.show{ display:flex; }
+  .splash .ring{ width:120px; height:120px; border-radius:50%; display:grid; place-items:center; font-size:60px;
+    color:#03130c; background:linear-gradient(135deg,var(--em1),var(--em3));
+    box-shadow:0 20px 60px rgba(16,185,129,.6); animation:splashPop .7s cubic-bezier(.2,1.3,.4,1) both; }
+  @keyframes splashPop{ 0%{ opacity:0; transform:scale(.4);} 30%{ opacity:1; transform:scale(1.05);}
+    70%{ opacity:1; transform:scale(1);} 100%{ opacity:0; transform:scale(1);} }
+
+  @media (prefers-reduced-motion:reduce){ *{ animation:none !important; } }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="wrap" id="card">
   <div class="head">
-    <div class="badge">🧠</div>
+    <div class="badge" id="badge">🧠</div>
     <div class="t">
       <h1>Captura de Insight</h1>
       <p>Joga aqui, o cérebro organiza.</p>
@@ -82,7 +128,13 @@
     <span id="net">•</span>
   </div>
 
+  <div class="counter" id="counter">🔥 <span id="cnum">0</span> insights hoje</div>
+
   <textarea id="txt" placeholder="Qual insight passou pela sua cabeça agora?"></textarea>
+  <div class="meta">
+    <span id="count">0 palavras</span>
+    <span class="kbd">Ctrl + Enter pra salvar</span>
+  </div>
 
   <div class="tags" id="tags">
     <span class="tag" data-tag="ideia">💡 ideia</span>
@@ -93,9 +145,14 @@
     <span class="tag" data-tag="tarefa">✅ tarefa</span>
   </div>
 
-  <button class="save" id="save">Salvar no cérebro</button>
+  <button class="save" id="save"><span id="savelbl">Salvar no cérebro</span></button>
   <div class="status" id="status"></div>
   <div class="hint">Aparece em minutos direto no seu Obsidian 🧠</div>
+
+  <div class="recent" id="recentBox" style="display:none">
+    <h2>Capturados agora</h2>
+    <div id="recent"></div>
+  </div>
 
   <div class="queue" id="queueBox" style="display:none">
     <h2>Aguardando envio (offline)</h2>
@@ -113,24 +170,23 @@
   </details>
 </div>
 
+<div class="splash" id="splash"><div class="ring">✓</div></div>
+
 <script>
 const $ = (id) => document.getElementById(id);
 const LS = { url:"ic_url", key:"ic_key", secret:"ic_secret", queue:"ic_queue" };
 let activeTags = new Set();
+const recent = [];
 
-// Config padrão (já preenchida). A chave anon é pública por natureza — a tabela
-// só permite INSERT anônimo, ninguém lê seus dados com ela.
 const DEFAULTS = {
   url: "https://mjexkhdcsacabhahigsu.supabase.co",
   key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qZXhraGRjc2FjYWJoYWhpZ3N1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3ODg0NDIsImV4cCI6MjEwMzM2NDQ0Mn0.MiHFDeEiyN0w1KI0AlIyhRCJxhRuuashI6Q9bjka564",
   secret: "daudt-cerebro-2026",
 };
-// Semeia a config na primeira vez (não sobrescreve o que você já ajustou)
 if (!localStorage.getItem(LS.url))    localStorage.setItem(LS.url, DEFAULTS.url);
 if (!localStorage.getItem(LS.key))    localStorage.setItem(LS.key, DEFAULTS.key);
 if (!localStorage.getItem(LS.secret)) localStorage.setItem(LS.secret, DEFAULTS.secret);
 
-// Carrega config salva
 $("cfgUrl").value = localStorage.getItem(LS.url) || "";
 $("cfgKey").value = localStorage.getItem(LS.key) || "";
 $("cfgSecret").value = localStorage.getItem(LS.secret) || "";
@@ -139,27 +195,58 @@ $("cfgSecret").value = localStorage.getItem(LS.secret) || "";
   $(id).addEventListener("input",()=>localStorage.setItem(k,$(id).value.trim()));
 });
 
+const buzz = (ms) => { try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){} };
+
+function todayKey(){ const d=new Date(),p=(n)=>String(n).padStart(2,"0"); return "ic_day_"+d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate()); }
+function getDay(){ return parseInt(localStorage.getItem(todayKey())||"0",10); }
+function bumpDay(){ const n=getDay()+1; localStorage.setItem(todayKey(),String(n)); renderDay(true); }
+function renderDay(anim){ $("cnum").textContent=getDay(); if(anim){ const c=$("counter"); c.classList.remove("bump"); void c.offsetWidth; c.classList.add("bump"); } }
+
+// textarea: auto-crescer + contador de palavras
+const txt = $("txt");
+function autogrow(){ txt.style.height="auto"; txt.style.height=Math.min(txt.scrollHeight,340)+"px"; }
+function countWords(){ const w=txt.value.trim(); const n=w?w.split(/\s+/).length:0; $("count").textContent=n+(n===1?" palavra":" palavras"); }
+txt.addEventListener("input",()=>{ autogrow(); countWords(); });
+txt.addEventListener("keydown",(e)=>{ if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){ e.preventDefault(); $("save").click(); } });
+
 // Tags
 $("tags").addEventListener("click",(e)=>{
   const t=e.target.closest(".tag"); if(!t)return;
-  const tag=t.dataset.tag;
+  const tag=t.dataset.tag; buzz(12);
   if(activeTags.has(tag)){activeTags.delete(tag);t.classList.remove("on");}
-  else{activeTags.add(tag);t.classList.add("on");}
+  else{activeTags.add(tag);t.classList.remove("on"); void t.offsetWidth; t.classList.add("on");}
 });
 
-// Status de rede
+// Rede
 function updateNet(){ $("net").textContent = navigator.onLine ? "🟢 online" : "🔴 offline"; }
 window.addEventListener("online",()=>{updateNet();flushQueue();});
 window.addEventListener("offline",updateNet); updateNet();
 
+// Fila offline
 function getQueue(){ try{return JSON.parse(localStorage.getItem(LS.queue)||"[]");}catch{return[];} }
 function setQueue(q){ localStorage.setItem(LS.queue,JSON.stringify(q)); renderQueue(); }
 function renderQueue(){
-  const q=getQueue(); const box=$("queueBox");
+  const q=getQueue(), box=$("queueBox");
   if(!q.length){box.style.display="none";return;}
   box.style.display="block";
-  $("queue").innerHTML=q.map(it=>`<div class="qitem"><span>${(it.texto||"").slice(0,60)}…</span><small>${it.criado_em.slice(11,16)}</small></div>`).join("");
+  $("queue").innerHTML=q.map(it=>`<div class="qitem"><span>${esc((it.texto||"").slice(0,60))}…</span><small>${(it.criado_em||"").slice(11,16)}</small></div>`).join("");
 }
+
+// Lista "capturados agora"
+function esc(s){ return (s||"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+function addRecent(item){
+  recent.unshift(item);
+  const box=$("recentBox"); box.style.display="block";
+  $("recent").innerHTML=recent.slice(0,5).map(it=>{
+    const tg=it.tags?`<div class="rtags">${it.tags.split(",").filter(Boolean).map(t=>"#"+t).join(" ")}</div>`:"";
+    return `<div class="ritem"><span class="rtime">${it.criado_em.slice(11,16)}</span>${esc(it.texto.slice(0,90))}${it.texto.length>90?"…":""}${tg}</div>`;
+  }).join("");
+}
+
+function setStatus(msg,cls){ const s=$("status"); s.textContent=msg||""; s.className="status "+(cls||""); }
+function nowLocalISO(){ const d=new Date(),p=(n)=>String(n).padStart(2,"0"); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; }
+
+function splash(){ const s=$("splash"); s.classList.add("show"); const b=$("badge"); b.classList.remove("pulse"); void b.offsetWidth; b.classList.add("pulse"); setTimeout(()=>s.classList.remove("show"),700); }
 
 async function sendOne(item){
   const url=localStorage.getItem(LS.url), key=localStorage.getItem(LS.key);
@@ -171,47 +258,34 @@ async function sendOne(item){
   });
   if(!r.ok){ const t=await r.text(); throw new Error("HTTP "+r.status+" "+t.slice(0,120)); }
 }
-
 async function flushQueue(){
   let q=getQueue(); if(!q.length)return;
   const rest=[];
   for(const it of q){ try{ await sendOne(it); }catch(e){ rest.push(it); } }
   setQueue(rest);
-  if(!rest.length) setStatus("Fila enviada. ✅","ok");
+  if(!rest.length) setStatus("Fila offline enviada. ✅","ok");
 }
 
-function setStatus(msg,cls){ const s=$("status"); s.textContent=msg; s.className="status "+(cls||""); }
-
-function nowLocalISO(){
-  const d=new Date(), p=(n)=>String(n).padStart(2,"0");
-  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
-}
+function resetForm(){ txt.value=""; autogrow(); countWords(); activeTags.clear(); document.querySelectorAll(".tag.on").forEach(t=>t.classList.remove("on")); }
 
 $("save").addEventListener("click",async()=>{
-  const texto=$("txt").value.trim();
-  if(!texto){ setStatus("Escreve algo primeiro.","warn"); return; }
-  const item={
-    texto,
-    tags:[...activeTags].join(","),
-    secret:localStorage.getItem(LS.secret)||"",
-    origem:"webapp",
-    criado_em:nowLocalISO(),
-    puxado:false
-  };
-  $("save").disabled=true; setStatus("Enviando…");
+  const texto=txt.value.trim();
+  if(!texto){ setStatus("Escreve algo primeiro.","warn"); txt.focus(); return; }
+  const item={ texto, tags:[...activeTags].join(","), secret:localStorage.getItem(LS.secret)||"", origem:"webapp", criado_em:nowLocalISO(), puxado:false };
+  const btn=$("save"); btn.disabled=true; $("savelbl").innerHTML='<span class="spinner"></span> Salvando…'; setStatus("");
   try{
     if(!navigator.onLine) throw new Error("offline");
     await sendOne(item);
-    setStatus("Salvo no cérebro. 🧠✅","ok");
-    $("txt").value=""; activeTags.clear(); document.querySelectorAll(".tag.on").forEach(t=>t.classList.remove("on"));
+    buzz(28); splash(); bumpDay(); addRecent(item);
+    setStatus("Salvo no cérebro. 🧠✅","ok"); resetForm();
   }catch(e){
-    const q=getQueue(); q.push(item); setQueue(q);
+    const q=getQueue(); q.push(item); setQueue(q); addRecent(item);
     setStatus(navigator.onLine ? ("Falhou, guardei offline: "+e.message) : "Offline — guardado, envio quando voltar.","warn");
-    $("txt").value=""; activeTags.clear(); document.querySelectorAll(".tag.on").forEach(t=>t.classList.remove("on"));
-  }finally{ $("save").disabled=false; }
+    resetForm();
+  }finally{ btn.disabled=false; $("savelbl").textContent="Salvar no cérebro"; }
 });
 
-renderQueue(); flushQueue();
+renderDay(false); autogrow(); countWords(); renderQueue(); flushQueue();
 </script>
 </body>
 </html>
