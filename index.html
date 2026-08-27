@@ -7,41 +7,82 @@
 <title>Cérebro — Captura</title>
 <link rel="manifest" href="manifest.json" />
 <style>
-  :root { --bg:#0b0f14; --card:#141b24; --line:#243040; --txt:#e6edf3; --mut:#8b98a9; --accent:#3fb950; --accent2:#2563eb; }
+  :root {
+    --txt:#e8eef5; --mut:#8b98a9; --field:#0e141b; --line:#232c38;
+    --em1:#34d399; --em2:#10b981; --em3:#059669;
+  }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--txt); min-height:100dvh; }
-  .wrap { max-width:600px; margin:0 auto; padding:20px 16px 40px; }
-  header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
-  h1 { font-size:18px; margin:0; font-weight:700; }
-  .dot { font-size:12px; color:var(--mut); }
-  textarea { width:100%; min-height:180px; resize:vertical; background:var(--card); color:var(--txt); border:1px solid var(--line); border-radius:14px; padding:14px; font-size:17px; line-height:1.5; outline:none; }
-  textarea:focus { border-color:var(--accent2); }
-  .tags { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0; }
-  .tag { padding:8px 14px; border-radius:999px; border:1px solid var(--line); background:var(--card); color:var(--mut); font-size:14px; cursor:pointer; user-select:none; }
-  .tag.on { background:var(--accent2); border-color:var(--accent2); color:#fff; }
-  button.save { width:100%; padding:16px; font-size:17px; font-weight:700; border:none; border-radius:14px; background:var(--accent); color:#04140a; cursor:pointer; }
-  button.save:active { transform:scale(.99); }
-  button.save:disabled { opacity:.5; }
-  .status { margin-top:14px; font-size:14px; min-height:20px; text-align:center; }
-  .ok { color:var(--accent); } .err { color:#f85149; } .warn { color:#d29922; }
+  body {
+    margin:0; min-height:100dvh; color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,sans-serif;
+    background:
+      radial-gradient(1100px 560px at 50% -12%, rgba(52,211,153,.16), transparent 60%),
+      radial-gradient(760px 520px at 50% 115%, rgba(99,102,241,.10), transparent 60%),
+      #0a0e13;
+    display:flex; align-items:center; justify-content:center; padding:24px 16px;
+  }
+  .wrap {
+    width:100%; max-width:440px;
+    background:rgba(18,24,33,.72); backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    border:1px solid rgba(255,255,255,.08); border-radius:22px;
+    padding:26px 22px 20px; box-shadow:0 24px 70px rgba(0,0,0,.5);
+  }
+  .head { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+  .badge { width:46px; height:46px; border-radius:14px; flex:none; display:grid; place-items:center;
+    font-size:25px; background:linear-gradient(135deg,var(--em1),var(--em3));
+    box-shadow:0 8px 22px rgba(16,185,129,.4); }
+  .head .t h1 { font-size:17px; margin:0; font-weight:700; letter-spacing:.2px; }
+  .head .t p { margin:3px 0 0; font-size:12.5px; color:var(--mut); }
+  #net { margin-left:auto; font-size:11px; color:var(--mut); border:1px solid var(--line);
+    padding:4px 9px; border-radius:999px; white-space:nowrap; align-self:flex-start; }
+  textarea { width:100%; min-height:150px; resize:vertical; background:var(--field); color:var(--txt);
+    border:1px solid var(--line); border-radius:14px; padding:14px 15px; font-size:16px; line-height:1.55;
+    outline:none; font-family:inherit; transition:border-color .15s, box-shadow .15s; }
+  textarea::placeholder { color:#5b6675; }
+  textarea:focus { border-color:var(--em2); box-shadow:0 0 0 3px rgba(52,211,153,.15); }
+  .tags { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 18px; }
+  .tag { padding:8px 13px; border-radius:999px; border:1px solid var(--line); background:var(--field);
+    color:var(--mut); font-size:13.5px; cursor:pointer; user-select:none; transition:all .15s; }
+  .tag:hover { border-color:#3a4757; color:var(--txt); }
+  .tag.on { background:linear-gradient(135deg,var(--em1),var(--em3)); border-color:transparent;
+    color:#03130c; font-weight:600; box-shadow:0 4px 13px rgba(16,185,129,.32); }
+  button.save { width:100%; padding:15px; font-size:16px; font-weight:700; border:none; border-radius:14px;
+    cursor:pointer; color:#03130c; background:linear-gradient(135deg,var(--em1),var(--em2));
+    box-shadow:0 8px 22px rgba(16,185,129,.38); letter-spacing:.2px;
+    transition:transform .1s, box-shadow .15s, opacity .15s; }
+  button.save:hover { box-shadow:0 11px 28px rgba(16,185,129,.48); }
+  button.save:active { transform:translateY(1px) scale(.995); }
+  button.save:disabled { opacity:.55; box-shadow:none; cursor:default; }
+  .status { margin-top:13px; font-size:13.5px; min-height:20px; text-align:center; }
+  .ok { color:var(--em1); } .err { color:#f87171; } .warn { color:#fbbf24; }
+  .hint { margin-top:16px; text-align:center; font-size:11.5px; color:#57616f; }
   .queue { margin-top:22px; font-size:13px; color:var(--mut); }
-  .queue h2 { font-size:13px; color:var(--mut); font-weight:600; margin:0 0 8px; }
-  .qitem { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:6px; font-size:13px; display:flex; justify-content:space-between; gap:8px; }
+  .queue h2 { font-size:12px; color:var(--mut); font-weight:600; margin:0 0 8px; text-transform:uppercase; letter-spacing:.5px; }
+  .qitem { background:var(--field); border:1px solid var(--line); border-radius:11px; padding:10px 12px;
+    margin-bottom:6px; font-size:13px; display:flex; justify-content:space-between; gap:8px; }
   .qitem small { color:var(--mut); white-space:nowrap; }
-  .cfg { margin-top:28px; }
-  .cfg summary { color:var(--mut); font-size:13px; cursor:pointer; }
-  .cfg input { width:100%; margin-top:8px; background:var(--card); color:var(--txt); border:1px solid var(--line); border-radius:10px; padding:10px; font-size:14px; }
-  .cfg label { font-size:12px; color:var(--mut); display:block; margin-top:10px; }
+  .cfg { margin-top:22px; border-top:1px solid rgba(255,255,255,.06); padding-top:14px; }
+  .cfg summary { color:var(--mut); font-size:12.5px; cursor:pointer; list-style:none; }
+  .cfg summary::-webkit-details-marker { display:none; }
+  .cfg input { width:100%; margin-top:6px; background:var(--field); color:var(--txt); border:1px solid var(--line);
+    border-radius:10px; padding:10px; font-size:13.5px; outline:none; }
+  .cfg input:focus { border-color:var(--em2); }
+  .cfg label { font-size:11.5px; color:var(--mut); display:block; margin-top:12px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <h1>🧠 Captura de Insight</h1>
-    <span class="dot" id="net">•</span>
-  </header>
+  <div class="head">
+    <div class="badge">🧠</div>
+    <div class="t">
+      <h1>Captura de Insight</h1>
+      <p>Joga aqui, o cérebro organiza.</p>
+    </div>
+    <span id="net">•</span>
+  </div>
 
-  <textarea id="txt" placeholder="Joga o insight aqui, do jeito que vier. O cérebro organiza depois."></textarea>
+  <textarea id="txt" placeholder="Qual insight passou pela sua cabeça agora?"></textarea>
 
   <div class="tags" id="tags">
     <span class="tag" data-tag="ideia">💡 ideia</span>
@@ -54,14 +95,15 @@
 
   <button class="save" id="save">Salvar no cérebro</button>
   <div class="status" id="status"></div>
+  <div class="hint">Aparece em minutos direto no seu Obsidian 🧠</div>
 
   <div class="queue" id="queueBox" style="display:none">
-    <h2>⏳ Aguardando envio (offline)</h2>
+    <h2>Aguardando envio (offline)</h2>
     <div id="queue"></div>
   </div>
 
   <details class="cfg">
-    <summary>⚙️ Configuração (uma vez só)</summary>
+    <summary>⚙️ Configuração avançada</summary>
     <label>Supabase URL</label>
     <input id="cfgUrl" placeholder="https://xxxx.supabase.co" />
     <label>Supabase anon key</label>
