@@ -117,6 +117,26 @@
   @keyframes splashPop{ 0%{ opacity:0; transform:scale(.4);} 30%{ opacity:1; transform:scale(1.05);}
     70%{ opacity:1; transform:scale(1);} 100%{ opacity:0; transform:scale(1);} }
 
+  /* abas */
+  .tabs{ display:flex; gap:6px; background:var(--field); border:1px solid var(--line); border-radius:13px; padding:4px; margin-bottom:16px; }
+  .tab-btn{ flex:1; text-align:center; padding:9px; border-radius:10px; font-size:13.5px; color:var(--mut);
+    cursor:pointer; user-select:none; transition:all .15s; border:none; background:transparent; font-family:inherit; }
+  .tab-btn.on{ background:linear-gradient(135deg,var(--em1),var(--em3)); color:#03130c; font-weight:700; }
+  /* análises */
+  #anList{ display:flex; flex-direction:column; gap:14px; }
+  .an{ background:var(--field); border:1px solid var(--line); border-radius:14px; padding:14px 15px; animation:slideIn .28s ease both; }
+  .an .an-date{ font-size:11px; color:var(--mut); margin-bottom:4px; }
+  .an h1.md{ font-size:16px; margin:0 0 .3em; font-weight:700; }
+  .an h3{ font-size:13.5px; margin:.7em 0 .3em; color:var(--em1); font-weight:700; }
+  .an p{ font-size:13px; color:var(--txt); margin:.4em 0; line-height:1.5; }
+  .an blockquote{ margin:.5em 0; padding:8px 12px; border-left:3px solid var(--em2); background:rgba(16,185,129,.06); border-radius:8px; font-size:12px; color:var(--mut); }
+  .an ul{ margin:.4em 0; padding-left:18px; } .an li{ font-size:13px; margin:2px 0; }
+  .an .tbl-wrap{ overflow-x:auto; margin:.5em 0; -webkit-overflow-scrolling:touch; }
+  .an table{ border-collapse:collapse; width:100%; font-size:12px; }
+  .an th, .an td{ border:1px solid var(--line); padding:6px 8px; text-align:left; white-space:nowrap; }
+  .an th{ background:rgba(255,255,255,.04); color:var(--mut); font-weight:600; }
+  .an-empty, .an-loading{ text-align:center; color:var(--mut); font-size:13px; padding:24px 0; line-height:1.6; }
+
   @media (prefers-reduced-motion:reduce){ *{ animation:none !important; } }
 </style>
 </head>
@@ -133,6 +153,12 @@
     <span id="net">•</span>
   </div>
 
+  <div class="tabs">
+    <button class="tab-btn on" id="tabCap">✍️ Capturar</button>
+    <button class="tab-btn" id="tabAn">📊 Análises</button>
+  </div>
+
+  <section id="capV">
   <div class="counter" id="counter">🔥 <span id="cnum">0</span> insights hoje</div>
 
   <textarea id="txt" placeholder="Qual insight passou pela sua cabeça agora?"></textarea>
@@ -163,6 +189,11 @@
     <h2>Aguardando envio (offline)</h2>
     <div id="queue"></div>
   </div>
+  </section>
+
+  <section id="anV" hidden>
+    <div id="anList"><div class="an-loading">Carregando…</div></div>
+  </section>
 
   <details class="cfg">
     <summary>⚙️ Configuração avançada</summary>
@@ -291,6 +322,60 @@ $("save").addEventListener("click",async()=>{
 });
 
 renderDay(false); autogrow(); countWords(); renderQueue(); flushQueue();
+
+// --- Abas: Capturar / Análises ---
+function showTab(which){
+  const cap = which === "cap";
+  $("capV").hidden = !cap; $("anV").hidden = cap;
+  $("tabCap").classList.toggle("on", cap);
+  $("tabAn").classList.toggle("on", !cap);
+  if(!cap) loadAnalises();
+}
+$("tabCap").addEventListener("click",()=>showTab("cap"));
+$("tabAn").addEventListener("click",()=>showTab("an"));
+
+// --- Mini markdown → HTML (subset: títulos, tabelas, negrito, citação, lista) ---
+function mdInline(s){ return esc(s).replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>"); }
+function mdToHtml(md){
+  const L=(md||"").replace(/\r/g,"").split("\n"); let html=""; let i=0;
+  const cells=(r)=>r.replace(/^\||\|$/g,"").split("|").map(c=>c.trim());
+  while(i<L.length){
+    const line=L[i];
+    if(/^\s*\|/.test(line)){
+      const rows=[]; while(i<L.length && /^\s*\|/.test(L[i])){ rows.push(L[i]); i++; }
+      const head=cells(rows[0]);
+      let t='<div class="tbl-wrap"><table><thead><tr>'+head.map(h=>"<th>"+mdInline(h)+"</th>").join("")+"</tr></thead><tbody>";
+      for(let r=2;r<rows.length;r++){ t+="<tr>"+cells(rows[r]).map(c=>"<td>"+mdInline(c)+"</td>").join("")+"</tr>"; }
+      html+=t+"</tbody></table></div>"; continue;
+    }
+    if(/^###\s/.test(line)){ html+="<h3>"+mdInline(line.replace(/^###\s/,""))+"</h3>"; i++; continue; }
+    if(/^##\s/.test(line)){ html+="<h3>"+mdInline(line.replace(/^##\s/,""))+"</h3>"; i++; continue; }
+    if(/^#\s/.test(line)){ html+='<h1 class="md">'+mdInline(line.replace(/^#\s/,""))+"</h1>"; i++; continue; }
+    if(/^>\s?/.test(line)){ const b=[]; while(i<L.length && /^>\s?/.test(L[i])){ b.push(L[i].replace(/^>\s?/,"")); i++; } html+="<blockquote>"+mdInline(b.join(" "))+"</blockquote>"; continue; }
+    if(/^[-*]\s/.test(line)){ const it=[]; while(i<L.length && /^[-*]\s/.test(L[i])){ it.push(L[i].replace(/^[-*]\s/,"")); i++; } html+="<ul>"+it.map(x=>"<li>"+mdInline(x)+"</li>").join("")+"</ul>"; continue; }
+    if(line.trim()===""){ i++; continue; }
+    html+="<p>"+mdInline(line)+"</p>"; i++;
+  }
+  return html;
+}
+
+let anLoaded=false;
+async function loadAnalises(force){
+  if(anLoaded && !force) return;
+  const url=localStorage.getItem(LS.url), key=localStorage.getItem(LS.key);
+  const box=$("anList"); box.innerHTML='<div class="an-loading">Carregando análises…</div>';
+  try{
+    const r=await fetch(url.replace(/\/$/,"")+"/rest/v1/analises?select=titulo,conteudo_md,gerado_em&order=gerado_em.desc&limit=20",
+      { headers:{ apikey:key, Authorization:"Bearer "+key } });
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    const data=await r.json(); anLoaded=true;
+    if(!data.length){ box.innerHTML='<div class="an-empty">Nenhuma análise ainda. 📭<br>A primeira sai na segunda (ou dá pra rodar na mão no GitHub Actions).</div>'; return; }
+    box.innerHTML=data.map(a=>{
+      const d=new Date(a.gerado_em); const dd=isNaN(d.getTime())?"":("gerado "+d.toLocaleString("pt-BR"));
+      return '<div class="an"><div class="an-date">'+dd+"</div>"+mdToHtml(a.conteudo_md)+"</div>";
+    }).join("");
+  }catch(e){ anLoaded=false; box.innerHTML='<div class="an-empty">Erro ao carregar: '+esc(e.message)+"</div>"; }
+}
 </script>
 
 <script>
