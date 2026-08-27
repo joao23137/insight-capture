@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<meta name="theme-color" content="#0b0f14" />
+<title>Cérebro — Captura</title>
+<link rel="manifest" href="manifest.json" />
+<style>
+  :root { --bg:#0b0f14; --card:#141b24; --line:#243040; --txt:#e6edf3; --mut:#8b98a9; --accent:#3fb950; --accent2:#2563eb; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--txt); min-height:100dvh; }
+  .wrap { max-width:600px; margin:0 auto; padding:20px 16px 40px; }
+  header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  h1 { font-size:18px; margin:0; font-weight:700; }
+  .dot { font-size:12px; color:var(--mut); }
+  textarea { width:100%; min-height:180px; resize:vertical; background:var(--card); color:var(--txt); border:1px solid var(--line); border-radius:14px; padding:14px; font-size:17px; line-height:1.5; outline:none; }
+  textarea:focus { border-color:var(--accent2); }
+  .tags { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0; }
+  .tag { padding:8px 14px; border-radius:999px; border:1px solid var(--line); background:var(--card); color:var(--mut); font-size:14px; cursor:pointer; user-select:none; }
+  .tag.on { background:var(--accent2); border-color:var(--accent2); color:#fff; }
+  button.save { width:100%; padding:16px; font-size:17px; font-weight:700; border:none; border-radius:14px; background:var(--accent); color:#04140a; cursor:pointer; }
+  button.save:active { transform:scale(.99); }
+  button.save:disabled { opacity:.5; }
+  .status { margin-top:14px; font-size:14px; min-height:20px; text-align:center; }
+  .ok { color:var(--accent); } .err { color:#f85149; } .warn { color:#d29922; }
+  .queue { margin-top:22px; font-size:13px; color:var(--mut); }
+  .queue h2 { font-size:13px; color:var(--mut); font-weight:600; margin:0 0 8px; }
+  .qitem { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:6px; font-size:13px; display:flex; justify-content:space-between; gap:8px; }
+  .qitem small { color:var(--mut); white-space:nowrap; }
+  .cfg { margin-top:28px; }
+  .cfg summary { color:var(--mut); font-size:13px; cursor:pointer; }
+  .cfg input { width:100%; margin-top:8px; background:var(--card); color:var(--txt); border:1px solid var(--line); border-radius:10px; padding:10px; font-size:14px; }
+  .cfg label { font-size:12px; color:var(--mut); display:block; margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🧠 Captura de Insight</h1>
+    <span class="dot" id="net">•</span>
+  </header>
+
+  <textarea id="txt" placeholder="Joga o insight aqui, do jeito que vier. O cérebro organiza depois."></textarea>
+
+  <div class="tags" id="tags">
+    <span class="tag" data-tag="ideia">💡 ideia</span>
+    <span class="tag" data-tag="campanha">📈 campanha</span>
+    <span class="tag" data-tag="pesquisa">🔎 pesquisa</span>
+    <span class="tag" data-tag="analise">📊 análise</span>
+    <span class="tag" data-tag="pessoal">🙂 pessoal</span>
+    <span class="tag" data-tag="tarefa">✅ tarefa</span>
+  </div>
+
+  <button class="save" id="save">Salvar no cérebro</button>
+  <div class="status" id="status"></div>
+
+  <div class="queue" id="queueBox" style="display:none">
+    <h2>⏳ Aguardando envio (offline)</h2>
+    <div id="queue"></div>
+  </div>
+
+  <details class="cfg">
+    <summary>⚙️ Configuração (uma vez só)</summary>
+    <label>Supabase URL</label>
+    <input id="cfgUrl" placeholder="https://xxxx.supabase.co" />
+    <label>Supabase anon key</label>
+    <input id="cfgKey" placeholder="eyJ..." />
+    <label>Sua senha de captura (a mesma do puxador)</label>
+    <input id="cfgSecret" placeholder="uma frase secreta sua" />
+  </details>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const LS = { url:"ic_url", key:"ic_key", secret:"ic_secret", queue:"ic_queue" };
+let activeTags = new Set();
+
+// Config padrão (já preenchida). A chave anon é pública por natureza — a tabela
+// só permite INSERT anônimo, ninguém lê seus dados com ela.
+const DEFAULTS = {
+  url: "https://mjexkhdcsacabhahigsu.supabase.co",
+  key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qZXhraGRjc2FjYWJoYWhpZ3N1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3ODg0NDIsImV4cCI6MjEwMzM2NDQ0Mn0.MiHFDeEiyN0w1KI0AlIyhRCJxhRuuashI6Q9bjka564",
+  secret: "daudt-cerebro-2026",
+};
+// Semeia a config na primeira vez (não sobrescreve o que você já ajustou)
+if (!localStorage.getItem(LS.url))    localStorage.setItem(LS.url, DEFAULTS.url);
+if (!localStorage.getItem(LS.key))    localStorage.setItem(LS.key, DEFAULTS.key);
+if (!localStorage.getItem(LS.secret)) localStorage.setItem(LS.secret, DEFAULTS.secret);
+
+// Carrega config salva
+$("cfgUrl").value = localStorage.getItem(LS.url) || "";
+$("cfgKey").value = localStorage.getItem(LS.key) || "";
+$("cfgSecret").value = localStorage.getItem(LS.secret) || "";
+["cfgUrl","cfgKey","cfgSecret"].forEach((id,i)=>{
+  const k=[LS.url,LS.key,LS.secret][i];
+  $(id).addEventListener("input",()=>localStorage.setItem(k,$(id).value.trim()));
+});
+
+// Tags
+$("tags").addEventListener("click",(e)=>{
+  const t=e.target.closest(".tag"); if(!t)return;
+  const tag=t.dataset.tag;
+  if(activeTags.has(tag)){activeTags.delete(tag);t.classList.remove("on");}
+  else{activeTags.add(tag);t.classList.add("on");}
+});
+
+// Status de rede
+function updateNet(){ $("net").textContent = navigator.onLine ? "🟢 online" : "🔴 offline"; }
+window.addEventListener("online",()=>{updateNet();flushQueue();});
+window.addEventListener("offline",updateNet); updateNet();
+
+function getQueue(){ try{return JSON.parse(localStorage.getItem(LS.queue)||"[]");}catch{return[];} }
+function setQueue(q){ localStorage.setItem(LS.queue,JSON.stringify(q)); renderQueue(); }
+function renderQueue(){
+  const q=getQueue(); const box=$("queueBox");
+  if(!q.length){box.style.display="none";return;}
+  box.style.display="block";
+  $("queue").innerHTML=q.map(it=>`<div class="qitem"><span>${(it.texto||"").slice(0,60)}…</span><small>${it.criado_em.slice(11,16)}</small></div>`).join("");
+}
+
+async function sendOne(item){
+  const url=localStorage.getItem(LS.url), key=localStorage.getItem(LS.key);
+  if(!url||!key) throw new Error("Configure Supabase URL e anon key (⚙️).");
+  const r=await fetch(url.replace(/\/$/,"")+"/rest/v1/insights",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json","apikey":key,"Authorization":"Bearer "+key,"Prefer":"return=minimal" },
+    body:JSON.stringify(item)
+  });
+  if(!r.ok){ const t=await r.text(); throw new Error("HTTP "+r.status+" "+t.slice(0,120)); }
+}
+
+async function flushQueue(){
+  let q=getQueue(); if(!q.length)return;
+  const rest=[];
+  for(const it of q){ try{ await sendOne(it); }catch(e){ rest.push(it); } }
+  setQueue(rest);
+  if(!rest.length) setStatus("Fila enviada. ✅","ok");
+}
+
+function setStatus(msg,cls){ const s=$("status"); s.textContent=msg; s.className="status "+(cls||""); }
+
+function nowLocalISO(){
+  const d=new Date(), p=(n)=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
+$("save").addEventListener("click",async()=>{
+  const texto=$("txt").value.trim();
+  if(!texto){ setStatus("Escreve algo primeiro.","warn"); return; }
+  const item={
+    texto,
+    tags:[...activeTags].join(","),
+    secret:localStorage.getItem(LS.secret)||"",
+    origem:"webapp",
+    criado_em:nowLocalISO(),
+    puxado:false
+  };
+  $("save").disabled=true; setStatus("Enviando…");
+  try{
+    if(!navigator.onLine) throw new Error("offline");
+    await sendOne(item);
+    setStatus("Salvo no cérebro. 🧠✅","ok");
+    $("txt").value=""; activeTags.clear(); document.querySelectorAll(".tag.on").forEach(t=>t.classList.remove("on"));
+  }catch(e){
+    const q=getQueue(); q.push(item); setQueue(q);
+    setStatus(navigator.onLine ? ("Falhou, guardei offline: "+e.message) : "Offline — guardado, envio quando voltar.","warn");
+    $("txt").value=""; activeTags.clear(); document.querySelectorAll(".tag.on").forEach(t=>t.classList.remove("on"));
+  }finally{ $("save").disabled=false; }
+});
+
+renderQueue(); flushQueue();
+</script>
+</body>
+</html>
