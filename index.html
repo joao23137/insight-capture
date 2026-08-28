@@ -147,6 +147,12 @@
   .an thead th:first-child{ background:#131a24; }
   .an td.pos{ color:var(--em1); font-weight:600; } .an td.neg{ color:#f87171; font-weight:600; }
   .an td:last-child{ font-weight:700; }
+  /* mini-abas dentro da análise */
+  .subtabs{ display:flex; gap:6px; overflow-x:auto; margin:.8em 0 .5em; -webkit-overflow-scrolling:touch; padding-bottom:2px; }
+  .subtab{ flex:0 0 auto; padding:6px 13px; border-radius:999px; border:1px solid var(--line); background:var(--field);
+    color:var(--mut); font-size:12px; cursor:pointer; white-space:nowrap; font-family:inherit; transition:all .15s; }
+  .subtab.on{ background:rgba(16,185,129,.15); border-color:var(--em2); color:var(--em1); font-weight:700; }
+  .subpanel[hidden]{ display:none; }
   .an-empty, .an-loading{ text-align:center; color:var(--mut); font-size:13px; padding:24px 0; line-height:1.6; }
 
   @media (prefers-reduced-motion:reduce){ *{ animation:none !important; } }
@@ -381,6 +387,38 @@ function mdToHtml(md){
   return html;
 }
 
+// quebra a análise em seções (## ) → vira mini-abas
+function shortName(n){ return n.split(/[(—]/)[0].trim(); }
+function parseSections(md){
+  const lines=(md||"").replace(/\r/g,"").split("\n");
+  let title="", intro=[], secs=[], cur=null;
+  for(const ln of lines){
+    if(!title && /^#\s/.test(ln)){ title=ln.replace(/^#\s/,""); continue; }
+    if(/^##\s/.test(ln)){ cur={ name:ln.replace(/^##\s+/,""), body:[] }; secs.push(cur); continue; }
+    if(cur) cur.body.push(ln); else intro.push(ln);
+  }
+  return { title, intro:intro.join("\n").trim(), secs };
+}
+function renderAnalise(a){
+  const d=new Date(a.gerado_em); const dd=isNaN(d.getTime())?"":("gerado "+d.toLocaleString("pt-BR"));
+  const { title, intro, secs }=parseSections(a.conteudo_md);
+  let h='<div class="an"><div class="an-date">'+dd+"</div>";
+  if(title) h+='<h1 class="md">'+mdInline(title)+"</h1>";
+  if(intro) h+=mdToHtml(intro);
+  if(secs.length){
+    h+='<div class="subtabs">'+secs.map((s,i)=>'<button class="subtab'+(i===0?" on":"")+'" data-i="'+i+'">'+esc(shortName(s.name))+"</button>").join("")+"</div>";
+    h+='<div class="subpanels">'+secs.map((s,i)=>'<div class="subpanel" data-i="'+i+'"'+(i===0?"":" hidden")+">"+mdToHtml(s.body.join("\n"))+"</div>").join("")+"</div>";
+  } else { h+=mdToHtml(a.conteudo_md); }
+  return h+"</div>";
+}
+// troca de mini-aba (delegado, uma vez só)
+$("anList").addEventListener("click",(e)=>{
+  const b=e.target.closest(".subtab"); if(!b) return;
+  const card=b.closest(".an"), i=b.dataset.i;
+  card.querySelectorAll(".subtab").forEach(x=>x.classList.toggle("on", x.dataset.i===i));
+  card.querySelectorAll(".subpanel").forEach(x=>{ x.hidden = x.dataset.i!==i; });
+});
+
 let anLoaded=false;
 async function loadAnalises(force){
   if(anLoaded && !force) return;
@@ -392,10 +430,7 @@ async function loadAnalises(force){
     if(!r.ok) throw new Error("HTTP "+r.status);
     const data=await r.json(); anLoaded=true;
     if(!data.length){ box.innerHTML='<div class="an-empty">Nenhuma análise ainda. 📭<br>A primeira sai na segunda (ou dá pra rodar na mão no GitHub Actions).</div>'; return; }
-    box.innerHTML=data.map(a=>{
-      const d=new Date(a.gerado_em); const dd=isNaN(d.getTime())?"":("gerado "+d.toLocaleString("pt-BR"));
-      return '<div class="an"><div class="an-date">'+dd+"</div>"+mdToHtml(a.conteudo_md)+"</div>";
-    }).join("");
+    box.innerHTML=data.map(renderAnalise).join("");
   }catch(e){ anLoaded=false; box.innerHTML='<div class="an-empty">Erro ao carregar: '+esc(e.message)+"</div>"; }
 }
 </script>
