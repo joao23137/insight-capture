@@ -143,8 +143,9 @@
   .an th, .an td{ padding:8px 10px; text-align:left; white-space:nowrap; border-bottom:1px solid var(--line); }
   .an th{ background:#131a24; color:var(--mut); font-weight:600; }
   .an tbody tr:nth-child(even) td{ background:rgba(255,255,255,.02); }
-  .an th:first-child, .an td:first-child{ position:sticky; left:0; background:var(--field); }
-  .an thead th:first-child{ background:#131a24; }
+  .an th:first-child, .an td:first-child{ position:sticky; left:0; z-index:1; background:var(--field); border-right:1px solid var(--line); }
+  .an tbody tr:nth-child(even) td:first-child{ background:var(--field); }
+  .an thead th:first-child{ background:#131a24; z-index:2; }
   .an td.pos{ color:var(--em1); font-weight:600; } .an td.neg{ color:#f87171; font-weight:600; }
   .an td:last-child{ font-weight:700; }
   /* mini-abas dentro da análise */
