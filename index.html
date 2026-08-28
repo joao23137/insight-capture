@@ -167,6 +167,15 @@
   .chips{ display:flex; flex-wrap:wrap; gap:6px; }
   .chip{ font-size:11px; color:var(--txt); background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:7px; padding:3px 7px; white-space:nowrap; }
   .chip-l{ color:var(--mut); }
+  /* responsivo: no desktop, análises alargam e viram tabela */
+  .tbl-wrap.deskonly{ display:none; }
+  @media (min-width:760px){
+    .wrap.wide{ max-width:920px; }
+    .wrap.wide .cards{ display:none; }
+    .wrap.wide .tbl-wrap.deskonly{ display:block; }
+    .wrap.wide .kpis{ grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); }
+    .wrap.wide #anList{ gap:18px; }
+  }
   .an-empty, .an-loading{ text-align:center; color:var(--mut); font-size:13px; padding:24px 0; line-height:1.6; }
 
   @media (prefers-reduced-motion:reduce){ *{ animation:none !important; } }
@@ -361,6 +370,7 @@ function showTab(which){
   $("capV").hidden = !cap; $("anV").hidden = cap;
   $("tabCap").classList.toggle("on", cap);
   $("tabAn").classList.toggle("on", !cap);
+  $("card").classList.toggle("wide", !cap);   // alarga no desktop quando em Análises
   if(!cap) loadAnalises();
 }
 $("tabCap").addEventListener("click",()=>showTab("cap"));
@@ -386,7 +396,13 @@ function renderCards(head, body){
     if(chips) out+='<div class="chips">'+chips+'</div>';
     out+="</div>";
   }
-  return out+"</div>";
+  out+="</div>";
+  // versão tabela (desktop) — mesma info aproveitando a largura
+  const tdc=(c)=>{ const cls=/🟢/.test(c)?' class="pos"':(/🔴/.test(c)?' class="neg"':''); return "<td"+cls+">"+mdInline(c)+"</td>"; };
+  let tbl='<div class="tbl-wrap deskonly"><table><thead><tr>'+head.map(h=>"<th>"+mdInline(h)+"</th>").join("")+"</tr></thead><tbody>";
+  for(const r of body){ tbl+="<tr>"+r.map(tdc).join("")+"</tr>"; }
+  tbl+="</tbody></table></div>";
+  return out+tbl;
 }
 function mdToHtml(md){
   const L=(md||"").replace(/\r/g,"").split("\n"); let html=""; let i=0;
