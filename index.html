@@ -131,10 +131,22 @@
   .an p{ font-size:13px; color:var(--txt); margin:.4em 0; line-height:1.5; }
   .an blockquote{ margin:.5em 0; padding:8px 12px; border-left:3px solid var(--em2); background:rgba(16,185,129,.06); border-radius:8px; font-size:12px; color:var(--mut); }
   .an ul{ margin:.4em 0; padding-left:18px; } .an li{ font-size:13px; margin:2px 0; }
-  .an .tbl-wrap{ overflow-x:auto; margin:.5em 0; -webkit-overflow-scrolling:touch; }
+  /* KPIs (resumo em cartões) */
+  .kpis{ display:grid; grid-template-columns:repeat(auto-fit,minmax(118px,1fr)); gap:10px; margin:.7em 0; }
+  .kpi{ background:rgba(255,255,255,.03); border:1px solid var(--line); border-radius:12px; padding:12px 13px; }
+  .kpi-l{ font-size:10px; color:var(--mut); margin-bottom:5px; text-transform:uppercase; letter-spacing:.4px; }
+  .kpi-v{ font-size:19px; font-weight:800; color:var(--txt); line-height:1.1; }
+  .kpi-v.pos{ color:var(--em1); } .kpi-v.neg{ color:#f87171; }
+  /* tabelas (rolagem lateral suave + coluna fixa + zebra + cores) */
+  .an .tbl-wrap{ overflow-x:auto; margin:.6em 0; -webkit-overflow-scrolling:touch; border:1px solid var(--line); border-radius:12px; }
   .an table{ border-collapse:collapse; width:100%; font-size:12px; }
-  .an th, .an td{ border:1px solid var(--line); padding:6px 8px; text-align:left; white-space:nowrap; }
-  .an th{ background:rgba(255,255,255,.04); color:var(--mut); font-weight:600; }
+  .an th, .an td{ padding:8px 10px; text-align:left; white-space:nowrap; border-bottom:1px solid var(--line); }
+  .an th{ background:#131a24; color:var(--mut); font-weight:600; }
+  .an tbody tr:nth-child(even) td{ background:rgba(255,255,255,.02); }
+  .an th:first-child, .an td:first-child{ position:sticky; left:0; background:var(--field); }
+  .an thead th:first-child{ background:#131a24; }
+  .an td.pos{ color:var(--em1); font-weight:600; } .an td.neg{ color:#f87171; font-weight:600; }
+  .an td:last-child{ font-weight:700; }
   .an-empty, .an-loading{ text-align:center; color:var(--mut); font-size:13px; padding:24px 0; line-height:1.6; }
 
   @media (prefers-reduced-motion:reduce){ *{ animation:none !important; } }
@@ -344,8 +356,18 @@ function mdToHtml(md){
     if(/^\s*\|/.test(line)){
       const rows=[]; while(i<L.length && /^\s*\|/.test(L[i])){ rows.push(L[i]); i++; }
       const head=cells(rows[0]);
+      // resumo (2 colunas) → cartões de KPI
+      if(head.length===2){
+        let t='<div class="kpis">';
+        for(let r=2;r<rows.length;r++){ const c=cells(rows[r]); const v=c[1]||"";
+          const cls=/🟢/.test(v)?"pos":(/🔴/.test(v)?"neg":"");
+          t+='<div class="kpi"><div class="kpi-l">'+mdInline(c[0])+'</div><div class="kpi-v '+cls+'">'+mdInline(v)+'</div></div>'; }
+        html+=t+"</div>"; continue;
+      }
+      // demais tabelas → células coloridas por 🟢/🔴
+      const td=(c)=>{ const cls=/🟢/.test(c)?' class="pos"':(/🔴/.test(c)?' class="neg"':''); return "<td"+cls+">"+mdInline(c)+"</td>"; };
       let t='<div class="tbl-wrap"><table><thead><tr>'+head.map(h=>"<th>"+mdInline(h)+"</th>").join("")+"</tr></thead><tbody>";
-      for(let r=2;r<rows.length;r++){ t+="<tr>"+cells(rows[r]).map(c=>"<td>"+mdInline(c)+"</td>").join("")+"</tr>"; }
+      for(let r=2;r<rows.length;r++){ t+="<tr>"+cells(rows[r]).map(td).join("")+"</tr>"; }
       html+=t+"</tbody></table></div>"; continue;
     }
     if(/^###\s/.test(line)){ html+="<h3>"+mdInline(line.replace(/^###\s/,""))+"</h3>"; i++; continue; }
